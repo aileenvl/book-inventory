@@ -10,6 +10,7 @@ export async function BooksGrid({
   books: Book[];
   searchParams: SearchParams;
 }) {
+  console.log(books)
   return (
     <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
       {!books?.length ? (
@@ -39,7 +40,7 @@ function BookLink({
   book: Book;
   searchParams: SearchParams;
 }) {
-  if (!book.thumbhash) {
+  if (!book.document.title) {
     console.warn(`Book ${book.id} has no thumbhash`);
     return null;
   }
@@ -54,9 +55,9 @@ function BookLink({
       prefetch={noFilters ? true : null}
     >
       <Photo
-        src={book.image_url!}
-        title={book.title}
-        thumbhash={book.thumbhash!}
+        src={book.document.image_url!}
+        title={book.document.title}
+        thumbhash={book.document.title!}
         priority={priority}
       />
     </Link>
