@@ -15,7 +15,9 @@ function SearchBase({ initialQuery }: { initialQuery: string }) {
 
   async function handleSubmit(formData: FormData) {
     let query = formData.get('search') as string;
-    let newUrl = `/?search=${encodeURIComponent(query)}`;
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('search', query);
+    let newUrl = `/?${currentParams.toString()}`;
     await triggerUpdate(newUrl);
   }
 
@@ -36,7 +38,7 @@ function SearchBase({ initialQuery }: { initialQuery: string }) {
   }, []);
 
   if (shouldSuspend) {
-    use(Promise.resolve());
+    throw triggerUpdate.currentPromise;
   }
 
   return (

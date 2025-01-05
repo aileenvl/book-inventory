@@ -14,9 +14,6 @@ export function Photo({
   thumbhash: string;
   priority: boolean;
 }) {
-  console.log(src)
-  console.log(title)
-  console.log(thumbhash)
   return (
     <div className="relative aspect-[2/3] w-full overflow-hidden rounded-md bg-muted shadow-md">
       <Image

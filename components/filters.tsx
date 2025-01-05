@@ -50,56 +50,96 @@ const LANGUAGES = [
 ];
 
 interface FilterProps {
-  searchParams: URLSearchParams;
+  onFilterChange: (filters: OramaFilters) => void;
+  initialFilters?: SearchParams;
 }
 
-function FilterBase({ searchParams }: FilterProps) {
+interface OramaFilters {
+  year?: { lte?: number };
+  rating?: { gte?: number };
+  language?: string;
+  pages?: { lte?: number };
+  isbn?: string[];
+}
+
+function FilterBase({ onFilterChange, initialFilters = {} }: FilterProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-
-  const initialFilters = parseSearchParams(Object.fromEntries(searchParams));
-  const [optimisticFilters, setOptimisticFilters] =
-    useOptimistic<SearchParams>(initialFilters);
-
-  const updateURL = (newFilters: SearchParams) => {
-    const queryString = stringifySearchParams(newFilters);
-    router.push(queryString ? `/?${queryString}` : '/');
+  
+  const parsedParams = {
+    ...initialFilters,
+    search: searchParams.get('search') || undefined,
+    yr: searchParams.get('yr') || undefined,
+    rtg: searchParams.get('rtg') || undefined,
+    lng: searchParams.get('lng') || undefined,
+    pgs: searchParams.get('pgs') || undefined,
+    isbn: searchParams.get('isbn') || undefined
   };
+
+  const [optimisticFilters, setOptimisticFilters] = 
+    useOptimistic<SearchParams>(parsedParams);
+
+  const yearValue = parsedParams.yr ? Number(parsedParams.yr) : 2023;
+  const ratingValue = parsedParams.rtg ? Number(parsedParams.rtg) : 0;
+  const pagesValue = parsedParams.pgs ? Number(parsedParams.pgs) : 1000;
+  const languageValue = parsedParams.lng || 'en';
+
+  console.log(JSON.stringify(optimisticFilters, null, 2));
 
   const handleFilterChange = (
     filterType: keyof SearchParams,
     value: string | undefined
   ) => {
     startTransition(() => {
-      const newFilters = { ...optimisticFilters, [filterType]: value };
+      console.log(filterType, value);
+      const newFilters = { 
+        ...optimisticFilters,
+        search: searchParams.get('search') || undefined,
+        [filterType]: value || undefined 
+      };
+      
+      Object.keys(newFilters).forEach(key => {
+        if (newFilters[key] === undefined) {
+          delete newFilters[key];
+        }
+      });
+
       setOptimisticFilters(newFilters);
-      updateURL(newFilters);
+      const newSearchParams = stringifySearchParams(newFilters);
+      router.push(`/?${newSearchParams}`);
+
+      const oramaFilters: OramaFilters = {};
+      if (newFilters.yr) oramaFilters.year = { lte: parseInt(newFilters.yr) };
+      if (newFilters.rtg) oramaFilters.rating = { gte: parseFloat(newFilters.rtg) };
+      if (newFilters.lng) oramaFilters.language = newFilters.lng;
+      if (newFilters.pgs) oramaFilters.pages = { lte: parseInt(newFilters.pgs) };
+      if (newFilters.isbn) oramaFilters.isbn = newFilters.isbn.split(',');
+
+      onFilterChange(oramaFilters);
     });
   };
 
   const handleListToggle = (isbns: string) => {
-    startTransition(() => {
-      const newIsbns = isbns.split(',');
-      const currentIsbns = optimisticFilters.isbn?.split(',') || [];
+    const newIsbns = isbns.split(',');
+    const currentIsbns = optimisticFilters.isbn?.split(',') || [];
 
-      // If the first ISBN of the list is already in the filter, remove all ISBNs of this list
-      if (currentIsbns.includes(newIsbns[0])) {
-        const updatedIsbns = currentIsbns.filter(
-          (isbn) => !newIsbns.includes(isbn)
-        );
-        handleFilterChange('isbn', updatedIsbns.join(',') || undefined);
-      } else {
-        // Otherwise, replace all current ISBNs with the new list
-        handleFilterChange('isbn', isbns);
-      }
-    });
+    if (currentIsbns.includes(newIsbns[0])) {
+      const updatedIsbns = currentIsbns.filter(
+        (isbn) => !newIsbns.includes(isbn)
+      );
+      handleFilterChange('isbn', updatedIsbns.join(',') || undefined);
+    } else {
+      handleFilterChange('isbn', isbns);
+    }
   };
 
   const handleClearFilters = () => {
-    startTransition(() => {
-      setOptimisticFilters({});
-      router.push('/');
-    });
+    const searchQuery = searchParams.get('search');
+    const newFilters = searchQuery ? { search: searchQuery } : {};
+    setOptimisticFilters(newFilters);
+    router.push(searchQuery ? `/?search=${searchQuery}` : '/');
+    onFilterChange({});
   };
 
   return (
@@ -116,7 +156,7 @@ function FilterBase({ searchParams }: FilterProps) {
               min={1950}
               max={2023}
               step={10}
-              value={[Number(optimisticFilters.yr) || 2023]}
+              value={[yearValue]}
               onValueChange={([value]) =>
                 handleFilterChange('yr', value.toString())
               }
@@ -124,7 +164,7 @@ function FilterBase({ searchParams }: FilterProps) {
             />
             <div className="flex justify-between mt-1 text-sm text-muted-foreground">
               <span>1950</span>
-              <span>{optimisticFilters.yr || 2023}</span>
+              <span>{yearValue}</span>
             </div>
           </div>
 
@@ -135,7 +175,7 @@ function FilterBase({ searchParams }: FilterProps) {
               min={0}
               max={5}
               step={0.5}
-              value={[Number(optimisticFilters.rtg) || 0]}
+              value={[ratingValue]}
               onValueChange={([value]) =>
                 handleFilterChange('rtg', value.toString())
               }
@@ -143,7 +183,7 @@ function FilterBase({ searchParams }: FilterProps) {
             />
             <div className="flex justify-between mt-1 text-sm text-muted-foreground">
               <span>0</span>
-              <span>{optimisticFilters.rtg || 0} stars</span>
+              <span>{ratingValue} stars</span>
               <span>5</span>
             </div>
           </div>
@@ -151,7 +191,7 @@ function FilterBase({ searchParams }: FilterProps) {
           <div>
             <Label htmlFor="language">Language</Label>
             <Select
-              value={optimisticFilters.lng || 'en'}
+              value={languageValue}
               onValueChange={(value) => handleFilterChange('lng', value)}
             >
               <SelectTrigger id="language" className="mt-2">
@@ -174,7 +214,7 @@ function FilterBase({ searchParams }: FilterProps) {
               min={1}
               max={1000}
               step={100}
-              value={[Number(optimisticFilters.pgs) || 1000]}
+              value={[pagesValue]}
               onValueChange={([value]) =>
                 handleFilterChange('pgs', value.toString())
               }
@@ -182,7 +222,7 @@ function FilterBase({ searchParams }: FilterProps) {
             />
             <div className="flex justify-between mt-1 text-sm text-muted-foreground">
               <span>1</span>
-              <span>{optimisticFilters.pgs || 1000}</span>
+              <span>{pagesValue}</span>
             </div>
           </div>
 
@@ -228,10 +268,9 @@ function FilterBase({ searchParams }: FilterProps) {
 }
 
 export function FilterFallback() {
-  return <FilterBase searchParams={new URLSearchParams()} />;
+  return <FilterBase onFilterChange={(filters) => console.log('Fallback filters:', filters)} />;
 }
 
 export function Filter() {
-  const searchParams = useSearchParams();
-  return <FilterBase searchParams={searchParams} />;
+  return <FilterBase onFilterChange={() => {}} initialFilters={{}} />;
 }
