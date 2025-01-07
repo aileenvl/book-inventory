@@ -5,12 +5,24 @@ import {
   CalendarIcon,
   ArrowLeftIcon,
 } from 'lucide-react';
+import { OramaClient } from '@oramacloud/client';
 import { Button } from '@/components/ui/button';
-import { fetchBookById, fetchBooksWithPagination } from '@/lib/db/queries';
 import { Photo } from '@/components/photo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 import { SearchParams, stringifySearchParams } from '@/lib/url-state';
+
+let client: OramaClient | null;
+try {
+  client = new OramaClient({
+    endpoint: process.env.NEXT_PUBLIC_ORAMA_ENDPOINT || '',
+    api_key: process.env.NEXT_PUBLIC_ORAMA_API_KEY || ''
+  });
+} catch (error) {
+  console.error('Failed to initialize Orama client:', error);
+  client = null;
+}
+
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -29,29 +41,32 @@ function getLanguageLabel(code: string | null): string {
   return language ? language.label : 'Unknown';
 }
 
-// Prerender the first page of books
-export async function generateStaticParams() {
-  const books = await fetchBooksWithPagination({});
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  const { id } = await params;
+  const resolvedSearchParams = await searchParams;
 
-  return books.map((books) => ({
-    id: books.id.toString(),
-  }));
-}
-
-export default async function Page(
-  props: {
-    params: Promise<{ id: string }>;
-    searchParams: Promise<SearchParams>;
-  }
-) {
-  const searchParams = await props.searchParams;
-  const params = await props.params;
-  const book = await fetchBookById(params.id);
+  const response = await client.search({
+    term: id,
+    mode: 'fulltext',
+  });
+  const rawBook = response.hits[0].document;
+  const book = {
+    ...rawBook,
+    authors: [rawBook.authors.name],
+    ratings_count: 0,
+    thumbhash: null,
+  };
 
   return (
     <ScrollArea className="px-4 h-full">
       <Button variant="ghost" className="mb-4" asChild>
-        <Link href={`/?${stringifySearchParams(searchParams)}`}>
+        <Link href={`/?${stringifySearchParams(resolvedSearchParams)}`}>
           <ArrowLeftIcon className="mr-2 h-4 w-4" /> Back to Books
         </Link>
       </Button>

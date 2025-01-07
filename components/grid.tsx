@@ -1,16 +1,16 @@
 import Link from 'next/link';
-import { Book } from '@/lib/db/schema';
 import { Photo } from './photo';
+import { Book } from '@/app/page';
 import { SearchParams, stringifySearchParams } from '@/lib/url-state';
+import { Suspense } from 'react';
 
-export async function BooksGrid({
+export function BooksGrid({
   books,
   searchParams,
 }: {
   books: Book[];
   searchParams: SearchParams;
 }) {
-  console.log(books)
   return (
     <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
       {!books?.length ? (
@@ -20,7 +20,7 @@ export async function BooksGrid({
       ) : (
         books.map((book, index) => (
           <BookLink
-            key={book.id}
+            key={book.document.isbn}
             priority={index < 10}
             book={book}
             searchParams={searchParams}
@@ -41,18 +41,17 @@ function BookLink({
   searchParams: SearchParams;
 }) {
   if (!book.document.title) {
-    console.warn(`Book ${book.id} has no thumbhash`);
+    console.warn(`Book ${book.id} has no title`);
     return null;
   }
 
-  let noFilters = Object.values(searchParams).every((v) => v === undefined);
+  const noFilters = Object.values(searchParams).every((v) => v === undefined);
 
   return (
     <Link
-      href={`/${book.id}?${stringifySearchParams(searchParams)}`}
-      key={book.id}
+      href={`/${book.document.isbn}?${stringifySearchParams(searchParams)}`}
       className="block transition ease-in-out md:hover:scale-105"
-      prefetch={noFilters ? true : null}
+      prefetch={noFilters}
     >
       <Photo
         src={book.document.image_url!}

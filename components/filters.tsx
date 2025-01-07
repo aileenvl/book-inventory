@@ -67,23 +67,23 @@ function FilterBase({ onFilterChange, initialFilters = {} }: FilterProps) {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   
-  const parsedParams = {
+  const parsedParams: SearchParams = {
     ...initialFilters,
-    search: searchParams.get('search') || undefined,
-    yr: searchParams.get('yr') || undefined,
-    rtg: searchParams.get('rtg') || undefined,
-    lng: searchParams.get('lng') || undefined,
-    pgs: searchParams.get('pgs') || undefined,
-    isbn: searchParams.get('isbn') || undefined
+    search: searchParams?.get('search') || undefined,
+    yr: searchParams?.get('yr') || undefined,
+    rtg: searchParams?.get('rtg') || undefined,
+    lng: searchParams?.get('lng') || undefined,
+    pgs: searchParams?.get('pgs') || undefined,
+    isbn: searchParams?.get('isbn') || undefined
   };
 
   const [optimisticFilters, setOptimisticFilters] = 
-    useOptimistic<SearchParams>(parsedParams);
+    useOptimistic<SearchParams>(parsedParams || {});
 
-  const yearValue = parsedParams.yr ? Number(parsedParams.yr) : 2023;
-  const ratingValue = parsedParams.rtg ? Number(parsedParams.rtg) : 0;
-  const pagesValue = parsedParams.pgs ? Number(parsedParams.pgs) : 1000;
-  const languageValue = parsedParams.lng || 'en';
+  const yearValue = Number(parsedParams?.yr) || 2023;
+  const ratingValue = Number(parsedParams?.rtg) || 0;
+  const pagesValue = Number(parsedParams?.pgs) || 1000;
+  const languageValue = parsedParams?.lng || 'en';
 
   console.log(JSON.stringify(optimisticFilters, null, 2));
 
@@ -91,15 +91,17 @@ function FilterBase({ onFilterChange, initialFilters = {} }: FilterProps) {
     filterType: keyof SearchParams,
     value: string | undefined
   ) => {
+    if (!searchParams) return;
+    
     startTransition(() => {
       console.log(filterType, value);
       const newFilters = { 
         ...optimisticFilters,
-        search: searchParams.get('search') || undefined,
+        search: searchParams?.get('search') || undefined,
         [filterType]: value || undefined 
       };
       
-      Object.keys(newFilters).forEach(key => {
+      (Object.keys(newFilters) as Array<keyof SearchParams>).forEach(key => {
         if (newFilters[key] === undefined) {
           delete newFilters[key];
         }

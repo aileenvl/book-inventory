@@ -63,6 +63,10 @@ async function processBook(book: typeof books.$inferSelect) {
 
     const embedding = await generateEmbedding(embeddingText);
 
+    if (!db) {
+      throw new Error('Database connection not initialized');
+    }
+
     await db
       .update(books)
       .set({
@@ -85,6 +89,10 @@ async function processBookBatch(bookBatch: (typeof books.$inferSelect)[]) {
 }
 
 export async function updateBooksWithEmbeddings() {
+  if (!db) {
+    throw new Error('Database connection not initialized');
+  }
+
   let offset = 0;
   let batchCount = 0;
   let totalProcessed = 0;

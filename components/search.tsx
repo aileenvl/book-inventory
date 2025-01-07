@@ -1,31 +1,60 @@
 'use client';
 
-import Form from 'next/form';
-import { useFormStatus } from 'react-dom';
-import { useRef, use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useRef, useEffect, useState } from 'react';
 import { SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSearchParams } from 'next/navigation';
-import { useBackpressure } from '@/lib/use-backpressure';
 
 function SearchBase({ initialQuery }: { initialQuery: string }) {
-  let [inputValue, setInputValue] = useState(initialQuery);
-  let inputRef = useRef<HTMLInputElement>(null);
-  let { triggerUpdate, shouldSuspend, formRef } = useBackpressure();
+  const [inputValue, setInputValue] = useState(initialQuery);
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  async function handleSubmit(formData: FormData) {
-    let query = formData.get('search') as string;
-    const currentParams = new URLSearchParams(window.location.search);
-    currentParams.set('search', query);
-    let newUrl = `/?${currentParams.toString()}`;
-    await triggerUpdate(newUrl);
-  }
+  const updateSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (value.trim()) {
+      params.set('search', value.trim());
+    } else {
+      params.delete('search');
+    }
+    
+    // Preserve other parameters while updating the URL
+    const newUrl = `/?${params.toString()}`;
+    router.push(newUrl);
+  };
 
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    let newValue = e.target.value;
-    setInputValue(newValue);
-    formRef.current?.requestSubmit();
-  }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Set a new timeout to update the search after 300ms of no typing
+    timeoutRef.current = setTimeout(() => {
+      updateSearch(value);
+    }, 300);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Update input value when URL search parameter changes
+  useEffect(() => {
+    setInputValue(initialQuery);
+  }, [initialQuery]);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -37,14 +66,9 @@ function SearchBase({ initialQuery }: { initialQuery: string }) {
     }
   }, []);
 
-  if (shouldSuspend) {
-    throw triggerUpdate.currentPromise;
-  }
-
   return (
-    <Form
-      ref={formRef}
-      action={handleSubmit}
+    <form
+      onSubmit={(e) => e.preventDefault()}
       className="relative flex flex-1 flex-shrink-0 w-full rounded shadow-sm"
     >
       <label htmlFor="search" className="sr-only">
@@ -62,18 +86,13 @@ function SearchBase({ initialQuery }: { initialQuery: string }) {
         className="w-full border-0 px-10 py-6 text-base md:text-sm overflow-hidden focus-visible:ring-0"
       />
       <LoadingSpinner />
-    </Form>
+    </form>
   );
 }
 
 function LoadingSpinner() {
-  let { pending } = useFormStatus();
-
   return (
-    <div
-      data-pending={pending ? '' : undefined}
-      className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity duration-300"
-    >
+    <div className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity duration-300">
       <svg className="h-5 w-5" viewBox="0 0 100 100">
         <circle
           cx="50"
@@ -84,7 +103,7 @@ function LoadingSpinner() {
           strokeWidth="10"
           strokeDasharray="282.7"
           strokeDashoffset="282.7"
-          className={pending ? 'animate-fill-clock' : ''}
+          className="animate-fill-clock"
           transform="rotate(-90 50 50)"
         />
       </svg>
@@ -97,6 +116,7 @@ export function SearchFallback() {
 }
 
 export function Search() {
-  let query = useSearchParams().get('search') ?? '';
+  const searchParams = useSearchParams();
+  const query = searchParams?.get('search') ?? '';
   return <SearchBase initialQuery={query} />;
 }
