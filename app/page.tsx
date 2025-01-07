@@ -37,10 +37,14 @@ export default async function Page({
   if (parsedSearchParams.pgs) where.num_pages = { lte: parseInt(parsedSearchParams.pgs) };
   if (parsedSearchParams.isbn) where.isbn = parsedSearchParams.isbn.split(',');
 
+  const currentPage = Math.max(1, Number(parsedSearchParams.page) || 1);
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
   const results = await client.search({
     term: query,
     mode: 'fulltext',
     limit: ITEMS_PER_PAGE,
+    offset: offset,
     where,
     sortBy: {
       property: "publication_year",
@@ -55,7 +59,6 @@ export default async function Page({
 
   const totalResults = results?.count || 0;
   const totalPages = Math.ceil(totalResults / ITEMS_PER_PAGE);
-  const currentPage = Math.max(1, Number(parsedSearchParams.page) || 1);
 
   return (
     <SearchParamsWrapper>
