@@ -83,10 +83,15 @@ export default async function Page({
             </div>
             <div className="flex items-center mb-4">
               <StarRating rating={book.average_rating} />
-              <span className="text-muted-foreground">
-                {book.ratings_count?.toLocaleString()} ratings
+              <span className="text-lg font-semibold">
+                {Number(book.average_rating).toFixed(1)}
+              </span>
+              <span className="text-gray-600 ml-2">
+                ({Number(book.ratings_count).toLocaleString()} ratings)
               </span>
             </div>
+
+            <p className="text-gray-700 mb-6">{book.description}</p>
             <div className="flex flex-col gap-2 text-sm">
               <div className="flex items-center">
                 <BookOpenIcon className="w-4 h-4 mr-2" />
