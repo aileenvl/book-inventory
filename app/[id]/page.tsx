@@ -23,7 +23,6 @@ try {
   client = null;
 }
 
-
 const LANGUAGES = [
   { value: 'en', label: 'English' },
   { value: 'spa', label: 'Spanish' },
@@ -51,10 +50,19 @@ export default async function Page({
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
 
-  const response = await client.search({
+  const response = await client?.search({
     term: id,
     mode: 'fulltext',
   });
+
+  if (!response) {
+    throw new Error('Failed to search for book');
+  }
+
+  if (response.hits.length === 0) {
+    throw new Error('Book not found');
+  }
+
   const rawBook = response.hits[0].document;
   const book = {
     ...rawBook,
@@ -84,7 +92,7 @@ export default async function Page({
         <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">{book.title}</h1>
           <div className="text-lg md:text-xl mb-4">
-            {book.authors.map((author, index) => (
+            {book.authors.map((author: string, index: number) => (
               <span key={author}>
                 {author}
                 {index < book.authors.length - 1 ? ', ' : ''}
