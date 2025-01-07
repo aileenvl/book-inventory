@@ -97,7 +97,7 @@ async function main() {
       CHECKPOINT_FILE,
       BATCH_SIZE,
       batchUpdateThumbHash,
-      sql,
+      sql!,
       TOTAL_BOOKS
     );
     console.log(

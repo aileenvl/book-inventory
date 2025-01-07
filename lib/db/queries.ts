@@ -86,7 +86,7 @@ export async function fetchBooksWithPagination(searchParams: SearchParams) {
   const whereClause = filters.length > 0 ? and(...filters) : undefined;
   const offset = (requestedPage - 1) * ITEMS_PER_PAGE;
 
-  const paginatedBooks = await db
+  const paginatedBooks = await db!
     .select({
       id: books.id,
       title: books.title,
@@ -116,7 +116,7 @@ export async function estimateTotalBooks(searchParams: SearchParams) {
   const whereClause = filters.length > 0 ? and(...filters) : undefined;
 
   // Use explain to get an estimate
-  const explainResult = await db.execute(sql`
+  const explainResult = await db!.execute(sql`
     EXPLAIN (FORMAT JSON)
     SELECT id FROM books
     ${whereClause ? sql`WHERE ${whereClause}` : sql``}
@@ -129,7 +129,7 @@ export async function estimateTotalBooks(searchParams: SearchParams) {
 }
 
 export async function fetchBookById(id: string) {
-  let result = await db
+  let result = await db!
     .select({
       id: books.id,
       isbn: books.isbn,

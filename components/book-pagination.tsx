@@ -1,5 +1,7 @@
 'use client';
 
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Form from 'next/form';
 import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
@@ -49,7 +51,7 @@ export function BookPagination({
   }
 
   return (
-    <Pagination>
+    <Suspense fallback={<div>Loading pagination...</div>}>
       <PaginationContent className="flex items-center justify-between">
         <PaginationItem>
           <Form action="/">
@@ -90,6 +92,6 @@ export function BookPagination({
           </Form>
         </PaginationItem>
       </PaginationContent>
-    </Pagination>
+    </Suspense>
   );
 }

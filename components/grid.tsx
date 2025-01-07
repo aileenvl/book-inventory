@@ -1,8 +1,18 @@
+'use client';
+
 import Link from 'next/link';
 import { Photo } from './photo';
-import { Book } from '@/app/page';
 import { SearchParams, stringifySearchParams } from '@/lib/url-state';
-import { Suspense } from 'react';
+
+interface Book {
+  id: string;
+  document: {
+    isbn: string;
+    title: string;
+    image_url: string;
+    thumbhash?: string;
+  };
+}
 
 export function BooksGrid({
   books,
@@ -56,7 +66,7 @@ function BookLink({
       <Photo
         src={book.document.image_url!}
         title={book.document.title}
-        thumbhash={book.document.title!}
+        thumbhash={book.document.thumbhash!}
         priority={priority}
       />
     </Link>

@@ -75,7 +75,7 @@ async function main() {
       CHECKPOINT_FILE,
       BATCH_SIZE,
       batchInsertBooks,
-      sql,
+      sql!,
       TOTAL_BOOKS
     );
     console.log(

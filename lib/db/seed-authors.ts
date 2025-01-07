@@ -37,7 +37,7 @@ async function batchInsertAuthors(
     ])
   );
 
-  await sql.transaction(queries);
+  await sql!.transaction(queries);
 }
 
 async function main() {
@@ -47,7 +47,7 @@ async function main() {
       CHECKPOINT_FILE,
       BATCH_SIZE,
       batchInsertAuthors,
-      sql,
+      sql!,
       TOTAL_AUTHORS
     );
     console.log(
