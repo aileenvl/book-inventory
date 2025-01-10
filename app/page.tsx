@@ -1,12 +1,12 @@
 import { Suspense } from 'react';
 import { BooksGrid } from '@/components/grid';
 import { BookPagination } from '@/components/book-pagination';
-import { ITEMS_PER_PAGE } from '@/lib/db/queries';
 import { parseSearchParams } from '@/lib/url-state';
 import { OramaClient } from '@oramacloud/client';
 import { SearchParamsWrapper } from '@/components/search-params-wrapper';
 
 let client: OramaClient | null;
+const ITEMS_PER_PAGE = 28;
 try {
   client = new OramaClient({
     endpoint: process.env.NEXT_PUBLIC_ORAMA_ENDPOINT || '',

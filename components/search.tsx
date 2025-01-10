@@ -30,19 +30,19 @@ function SearchBase({ initialQuery }: { initialQuery: string }) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
-    
-    // Clear any existing timeout
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     
-    // Set a new timeout to update the search after 300ms of no typing
-    timeoutRef.current = setTimeout(() => {
-      updateSearch(value);
-    }, 300);
+    const currentSearch = searchParams.get('search') || '';
+    if (value.trim() !== currentSearch) {
+      timeoutRef.current = setTimeout(() => {
+        updateSearch(value);
+      }, 300);
+    }
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -50,11 +50,6 @@ function SearchBase({ initialQuery }: { initialQuery: string }) {
       }
     };
   }, []);
-
-  // Update input value when URL search parameter changes
-  useEffect(() => {
-    setInputValue(initialQuery);
-  }, [initialQuery]);
 
   useEffect(() => {
     if (inputRef.current) {
